@@ -122,7 +122,8 @@ class S3Operations(object):
                     }
                 )
 
-        except boto3.exceptions.S3UploadFailedError:
+        except boto3.exceptions.S3UploadFailedError as e:
+            frappe.errprint(e)
             frappe.throw(frappe._("File Upload Failed. Please try again."))
         return key
 
@@ -153,6 +154,8 @@ class S3Operations(object):
         """
         Function to read file from a s3 file.
         """
+
+        frappe.errprint(key)
         return self.S3_CLIENT.get_object(Bucket=self.BUCKET, Key=key)
 
     def get_url(self, key):
@@ -227,6 +230,30 @@ def generate_file(key=None):
         frappe.local.response['body'] = "Key not found."
     return
 
+@frappe.whitelist()
+def get_file_url(key=None):
+    """
+    Function to fetch file URL from s3.
+    """
+    if key:
+        s3_upload = S3Operations()
+        return s3_upload.get_url(key)
+    else:
+        return "Key not found."
+    return
+
+@frappe.whitelist()
+def get_file_key(filepath=None):
+    """
+    Function to fetch content hash from frappe file manager.
+    """
+    if filepath:
+        filename = filepath.split('/')
+        file = frappe.get_doc('File',{"file_name":filename[-1]})
+        return file.content_hash
+    else:
+        return "File not found."
+    return
 
 def upload_existing_files_s3(name, file_name):
     """
